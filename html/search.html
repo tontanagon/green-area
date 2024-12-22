@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ค้นหาจังหวัดใกล้เคียงที่สภาพอากาศดีที่สุด</title>
+    <link rel="icon" type="image/x-icon" href="/img/tree.png">
+    <link rel="stylesheet" href="/css/style.css">
+    <script src="/js/script.js"></script>
+</head>
+<body>
+    <nav class="navbar">
+        <ul>
+            <li><a href="/html/index.html">พื้นที่สีเขียว</a></li>
+            <li><a href="#">Search</a></li>
+        </ul>
+    </nav>
+    <div class="container">
+        <h1>ค้นหาจังหวัดใกล้เคียงที่สภาพอากาศดีที่สุด</h1>
+    </div>
+    <div class="container">
+        <form id="weatherForm" >
+            <label for="region">เลือกภูมิภาค:</label>
+            <select id="region" onchange="updateProvinces()">
+                <option value="Northern">เหนือ</option>
+                <option value="Northeastern">อีสาน</option>
+                <option value="Central">กลาง</option>
+                <option value="Eastern">ตะวันออก</option>
+                <option value="Southern">ใต้</option>
+                <option value="Western">ตะวันตก</option>
+            </select>
+            <label for="province">เลือกจังหวัด:</label>
+            <select id="province">
+                <!-- ตัวเลือกจังหวัดจะถูกเติมโดย JavaScript -->
+            </select>
+    
+            <label for="date">เลือกวันที่:</label>
+            <select id="date"></select>
+    
+            <label for="time">เลือกเวลา:</label>
+            <select id="time">
+                <option value="00:00:00">00:00</option>
+                <option value="03:00:00">03:00</option>
+                <option value="06:00:00">06:00</option>
+                <option value="09:00:00">09:00</option>
+                <option value="12:00:00">12:00</option>
+                <option value="15:00:00">15:00</option>
+                <option value="18:00:00">18:00</option>
+                <option value="21:00:00">21:00</option>
+            </select>
+    
+            <button type="button" onclick="fetchWeatherData()">ค้นหา</button>
+        </form>
+    </div>
+
+    <div class="container">
+        <table id="resultsTable">
+            <thead>
+                <tr>
+                    <th>จังหวัด</th>
+                    <th>อุณหภูมิ (°C)</th>
+                    <th>ความเร็วลม (m/s)</th>
+                    <th>เมฆ (%)</th>
+                    <th>ระยะทาง (km)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <div id="loading" class="Loading">
+                    <p>Loading...</p>
+                </div>
+                <!-- ข้อมูลออกตรงนี้ -->
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>

@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ค้นหาจังหวัดใกล้เคียงที่สภาพอากาศดีที่สุด</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f4f4f4;
+            color: #333;
+        }
+
+        header {
+            background-color: #4CAF50;
+            padding: 10px 20px;
+            text-align: center;
+            color: white;
+        }
+
+        main {
+            padding: 20px;
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+
+        label {
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        select, button {
+            padding: 10px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+
+        table, th, td {
+            border: 1px solid #ddd;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+        }
+
+        th {
+            background-color: #4CAF50;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+
+<header>
+    <h1>ค้นหาจังหวัดใกล้เคียงที่สภาพอากาศดีที่สุด</h1>
+</header>
+
+<main>
+    <form id="weatherForm">
+        <label for="province">เลือกจังหวัด:</label>
+        <select id="province">
+            <option value="Bangkok">กรุงเทพมหานคร</option>
+            <option value="ChiangMai">เชียงใหม่</option>
+            <option value="Phuket">ภูเก็ต</option>
+            <option value="KhonKaen">ขอนแก่น</option>
+        </select>
+
+        <label for="date">เลือกวันที่:</label>
+        <select id="date"></select>
+
+        <label for="time">เลือกเวลา:</label>
+        <select id="time">
+            <option value="00:00:00">00:00</option>
+            <option value="03:00:00">03:00</option>
+            <option value="06:00:00">06:00</option>
+            <option value="09:00:00">09:00</option>
+            <option value="12:00:00">12:00</option>
+            <option value="15:00:00">15:00</option>
+            <option value="18:00:00">18:00</option>
+            <option value="21:00:00">21:00</option>
+        </select>
+
+        <button type="button" onclick="fetchWeatherData()">ค้นหา</button>
+    </form>
+
+    <table id="resultsTable">
+        <thead>
+            <tr>
+                <th>จังหวัด</th>
+                <th>อุณหภูมิ (°C)</th>
+                <th>ความเร็วลม (m/s)</th>
+                <th>เมฆ (%)</th>
+                <th>ระยะทาง (km)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Results will be populated here -->
+        </tbody>
+    </table>
+</main>
+
+<script>
+const apiKey = 'ee47638ad2a5ae6362d146cd3c28988a'; // Replace with your OpenWeather API Key
+
+function populateDates() {
+    const dateSelect = document.getElementById('date');
+    const today = new Date();
+
+    for (let i = 0; i < 7; i++) {
+        const futureDate = new Date(today);
+        futureDate.setDate(today.getDate() + i);
+
+        const dateStr = futureDate.toISOString().split('T')[0];
+        const option = document.createElement('option');
+        option.value = dateStr;
+        option.textContent = i === 0 ? `Today (${dateStr})` : dateStr;
+        dateSelect.appendChild(option);
+    }
+}
+
+populateDates();
+
+function fetchWeatherData() {
+    const province = document.getElementById('province').value;
+    const date = document.getElementById('date').value;
+    const time = document.getElementById('time').value;
+
+    const coordinates = {
+        "Bangkok": { lat: 13.7563, lon: 100.5018 },
+        "ChiangMai": { lat: 18.7872, lon: 98.9936 },
+        "Phuket": { lat: 7.8804, lon: 98.3923 },
+        "KhonKaen": { lat: 16.4322, lon: 102.8236 },
+    };
+
+    const selectedCoordinates = coordinates[province];
+
+    axios.get(`https://api.openweathermap.org/data/2.5/forecast?lat=${selectedCoordinates.lat}&lon=${selectedCoordinates.lon}&appid=${apiKey}&units=metric`)
+        .then(response => {
+            const weatherData = response.data.list.filter(item => item.dt_txt.startsWith(date) && item.dt_txt.includes(time));
+            
+            const results = Object.keys(coordinates).map(location => {
+                const coord = coordinates[location];
+                const distance = calculateDistance(selectedCoordinates, coord);
+                const weather = weatherData[0]; // Simplified: Use data for the first match only
+
+                return {
+                    province: location,
+                    temperature: weather.main.temp,
+                    windSpeed: weather.wind.speed,
+                    clouds: weather.clouds.all,
+                    distance: distance,
+                };
+            });
+
+            results.sort((a, b) => a.distance - b.distance || b.temperature - a.temperature);
+            updateTable(results);
+        })
+        .catch(error => console.error('Error fetching weather data:', error));
+}
+
+function calculateDistance(coord1, coord2) {
+    const R = 6371; // Earth radius in km
+    const lat1 = coord1.lat * Math.PI / 180;
+    const lon1 = coord1.lon * Math.PI / 180;
+    const lat2 = coord2.lat * Math.PI / 180;
+    const lon2 = coord2.lon * Math.PI / 180;
+
+    const dlat = lat2 - lat1;
+    const dlon = lon2 - lon1;
+
+    const a = Math.sin(dlat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dlon / 2) ** 2;
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+    return R * c; // Distance in km
+}
+
+function updateTable(results) {
+    const tbody = document.getElementById('resultsTable').getElementsByTagName('tbody')[0];
+    tbody.innerHTML = '';
+
+    results.forEach(result => {
+        const row = document.createElement('tr');
+
+        row.innerHTML = `
+            <td>${result.province}</td>
+            <td>${result.temperature.toFixed(1)}</td>
+            <td>${result.windSpeed.toFixed(1)}</td>
+            <td>${result.clouds}</td>
+            <td>${result.distance.toFixed(1)}</td>
+        `;
+
+        tbody.appendChild(row);
+    });
+}
+</script>
+
+</body>
+</html>
