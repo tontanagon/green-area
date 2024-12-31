@@ -323,34 +323,44 @@ async function fetchWeatherData() {
 
     try {
         const weatherDataArray = await Promise.all(weatherPromises);
-
         const results = [];
-
-        // กรองข้อมูลที่ตรงตามเงื่อนไข (อุณหภูมิ 15-25 องศา, ความเร็วลม < 20, เมฆ < 50%)
+    
+        // เก็บข้อมูลทั้งหมดโดยไม่กรอง
         weatherDataArray.forEach((weather, index) => {
             const province = closestProvinces[index];
-            if (weather.main.temp >= 15 && weather.main.temp <= 25 &&
-                weather.wind.speed < 20 && weather.clouds.all < 50) {
-                const distance = calculateDistance(selectedCoordinates, { lat: province.lat, lon: province.lon });
-                results.push({
-                    province: province.name,
-                    temperature: weather.main.temp,
-                    windSpeed: weather.wind.speed,
-                    clouds: weather.clouds.all,
-                    distance: distance,
-                });
-            }
+            const distance = calculateDistance(selectedCoordinates, { lat: province.lat, lon: province.lon });
+    
+            results.push({
+                province: province.name,
+                temperature: weather.main.temp,
+                windSpeed: weather.wind.speed,
+                clouds: weather.clouds.all,
+                distance: distance,
+                // เพิ่มฟิลด์สำหรับการจัดลำดับ
+                isTemperatureInRange: weather.main.temp >= 15 && weather.main.temp <= 25,
+                isWindSpeedInRange: weather.wind.speed < 20,
+                isCloudsInRange: weather.clouds.all < 50,
+            });
         });
-
-        // เรียงลำดับผลลัพธ์
+    
+        // เรียงลำดับตามเงื่อนไข
         results.sort((a, b) => {
-            if (a.distance !== b.distance) return a.distance - b.distance;
-            if (a.temperature !== b.temperature) return a.temperature - b.temperature;
-            if (a.clouds !== b.clouds) return a.clouds - b.clouds;
-            if (a.windSpeed !== b.windSpeed) return a.windSpeed - b.windSpeed;
-            return 0;
+            // เรียงลำดับอุณหภูมิระหว่าง 15-25 ก่อน
+            if (b.isTemperatureInRange !== a.isTemperatureInRange) {
+                return b.isTemperatureInRange - a.isTemperatureInRange;
+            }
+            // ต่อด้วยความเร็วลมน้อยกว่า 20
+            if (b.isWindSpeedInRange !== a.isWindSpeedInRange) {
+                return b.isWindSpeedInRange - a.isWindSpeedInRange;
+            }
+            // ตามด้วยเมฆน้อยกว่า 50%
+            if (b.isCloudsInRange !== a.isCloudsInRange) {
+                return b.isCloudsInRange - a.isCloudsInRange;
+            }
+            // หากเงื่อนไขทั้งหมดเท่ากัน ให้เรียงตามระยะทาง
+            return a.distance - b.distance;
         });
-
+    
         // อัพเดตตารางผลลัพธ์
         updateTable(results);
     } catch (error) {
